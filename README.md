@@ -142,6 +142,7 @@ I would like to thank two japanese persons who commented extensively to the arti
 + ehito, whose comments are always mathematically and computationally fruitful. [ehit san's blog](http://ehito.hatenablog.com/) deals with automated theorem proving and computer algebra systems with a lot of quntifier elimination topics
 + Ikumi Keita, the alogrithm described in [Ikumi Keita san's blog](https://ikumi.que.jp/blog/) is the one I have implemented in Maxima for the first time in this course of development. Also he gave me an insightfull comments.
 
+The following two persons published very detailed algorithms in this topic.
 + "Amature mathematician after retirement", who developed a detailed algorithm in Mathematica and sent its description to Ikumi Keita for publish on Ikumi's blog. The text is available [here](https://ikumi.que.jp/blog/wp-content/uploads/2018/09/galois-solution.pdf)
 + Anonymous, who put a long text about algorithms around this topic in 2014. Part of Gal.mac is based on [this text](http://scipio.secret.jp/Galois/galois_zenbun.pdf).
 
