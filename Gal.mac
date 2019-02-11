@@ -1,0 +1,209 @@
+/* -*-Maxima-*- */
+/*
+;; Copyright (C) 2018, 2019 Yasuaki Honda
+;; Gal.mac
+;; This file is part of GaloisGroupSolver package.
+;;
+;; This program is free software; you can redistribute it and/or
+;; modify it under the terms of the GNU General Public License as
+;; published by the Free Software Foundation; either version 2 of
+;; the License, or (at your option) any later version.
+;;
+;; This program is distributed in the hope that it will be
+;; useful, but WITHOUT ANY WARRANTY; without even the implied
+;; warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+;; PURPOSE.  See the GNU General Public License for more details.
+;;
+;; You should have received a copy of the GNU General Public
+;; License along with this program; if not, see
+;; <http://www.gnu.org/licenses/>.
+*/
+
+load(sym)$
+load(grobner)$
+load(stringproc)$
+
+/* debug utility */
+debug_gal:false;
+tex_flag:true;
+dbg_gal_print([data]):=block([display2d:imaxima],
+  if debug_gal then (
+    if tex_flag then print(data) else (display2d:false,print(data))))$
+
+progress_flag:false;
+dbg_gal_print_progress(msg):=block([display2d:false],
+  if progress_flag then (print(msg),display2d:imaxima,print(msg)))$
+
+/*phi(xlist):=xlist[1]-3*xlist[2]+10*xlist[3]-7*xlist[4];*/
+
+gal_irreducible_p(p):=is(expand(p)=factor(p));
+separable_p(p,var):=is(gcd(p,diff(p,var))=1);
+defstruct(GalPolynomialInfo(polynomial=0,degree=0,symcond=[],sollist=[],solperm=[],vcond=[],vncond=[],solcond=[],gal_minpoly=0,galois_group_index=false,prec=1000,numsollist=[]));
+
+gal_init_polynomial_info2(p,pi):=block([ele,numsollist,fpprec:pi@prec],
+  if not(gal_irreducible_p(p)) then error("not irreducible:",p),
+  if not(separable_p(p,x)) then error("not separable:",p),
+  numsollist:bfallroots(%i*p),
+  ele:polynome2ele(p,x),
+  pi@polynomial:p,
+  pi@degree:first(ele),
+  pi@symcond:makelist(eval_string(sconcat("e",i))=ele[i+1],i,1,pi@degree),
+  pi@sollist:makelist(eval_string(ascii(96+i)),i,pi@degree),
+  pi@solperm:listify(permutations(pi@sollist)),
+  pi@vcond:makelist(V[i]=gal_phi(pi@solperm[i]),i,1,length(pi@solperm)),
+  pi@numsollist:makelist(pi@sollist[i]=rhs(numsollist[i]),i,1,length(numsollist)),
+  return(pi));
+
+gal_init_polynomial_info(p):=block([poly,ele,numsollist,fpprec:1000],
+  if not(gal_irreducible_p(p)) then error("not irreducible:",p),
+  if not(separable_p(p,x)) then error("not separable:",p),
+  poly:new(GalPolynomialInfo),
+  fpprec:poly@prec,
+  ele:polynome2ele(p,x),
+  numsollist:bfallroots(%i*p),
+  poly@polynomial:p,
+  poly@degree:first(ele),
+  poly@symcond:makelist(eval_string(sconcat("e",i))=ele[i+1],i,1,poly@degree),
+  poly@sollist:makelist(eval_string(ascii(96+i)),i,poly@degree),
+  poly@solperm:listify(permutations(poly@sollist)),
+  poly@vcond:makelist(V[i]=gal_phi(poly@solperm[i]),i,1,length(poly@solperm)),
+  poly@numsollist:makelist(poly@sollist[i]=rhs(numsollist[i]),i,1,length(numsollist)),
+  return(poly));
+
+get_one_factor(poly,pi):=block([op:op(poly),Vnum,minpoly,fpprec:pi@prec],if op="+" then poly else if op="*" then (
+    for i:1 thru length(args(poly)) do (
+      minpoly:args(poly)[i],dbg_gal_print('minpoly=minpoly),
+      if not(separable_p(minpoly,V)) then (
+        error("get_minimal_polynomial: parameter of gal_phi() must be changed.",minpoly)),
+      Vnum:ev(rhs(pi@vcond[1]),pi@numsollist),
+      if round(cabs(ev(minpoly,V=Vnum,eval,expand,numer)))=0 then return(minpoly)))
+  else error("get_minimal_polynomial: parameter of gal_phi() must be changed."))$
+
+gal_minimal_polynomial_V2(pi):=block([p4,z,fpprec:pi@prec],
+  dbg_gal_print_progress("gal_minimal_polynomial_V2 bfallroots, product(V-V[i],i,1,degree!"),
+  pi@numsollist:map(lambda([a,b],[a=b]),pi@sollist,map('rhs,ev(bfallroots(%i*pi@polynomial)))),
+  p4:expand(product(V-ev(V[i],pi@vcond,pi@numsollist),i,1,pi@degree!)),
+  dbg_gal_print_progress("gal_minimal_polynomial_V2 fullmap for rounds"),
+  p4:expand(fullmap(lambda([s],if symbolp(s) then s else round(s)),p4)),
+  dbg_gal_print_progress("gal_minimal_polynomial_V2 fullmap for error check"),
+  fullmap(lambda([s],if s=%i then error("precision not enough")),p4),
+  dbg_gal_print_progress("gal_minimal_polynomial_V2 factor"),
+  gal_GLOBAL_p4:p4,
+  p4:factor(p4),
+  if not(separable_p(p4,V)) then error("p4 not separable:",p4),
+  pi@gal_minpoly:get_one_factor(p4,pi),
+  if imagpart(pi@gal_minpoly)#0 then (
+    error("precision may be not enough.",pi@gal_minpoly)) else return(pi@gal_minpoly))$
+
+gal_minimal_polynomial_V(pi):=block([p2,CL,CLREs,res,p4],
+  p2:rat(1,V,a,b,c,d,e,f,g),
+  for i:1 thru pi@degree! do (
+    p2:fasttimes(rat(ev(V-V[i],pi@vcond),V,a,b,c,d,e,f,g),p2)),
+  CL:makelist(coeff(p2,V,i),i,0,pi@degree!),
+  CLRes:map(lambda([cf],block([pp],ev(elem([pi@degree],tcontract(cf,pi@sollist),pi@sollist),pi@symcond,eval))),CL),
+  (res:0,for i:1 thru pi@degree!+1 do res:res+CLRes[i]*V^(i-1)),
+  p4:factor(res),
+  pi@gal_minpoly:get_one_factor(p4),
+  return(pi@gal_minpoly))$
+
+gal_linearp(poly,var):=is(hipow(poly,var)=1);
+
+sum_prod_roots(rootlist,poly,var):=block([degree],degree:hipow(poly,var),
+  if length(rootlist)#degree then error("sum_prod_roots: rootlist and poly does not match degree",poly,rootlist),
+  makelist(coeff(poly-expand(product(var-rootlist[i],i,1,degree)),var,j),j,0,degree-1))$
+
+
+gal_sol_V(pi):=block([p6,gb,symvarlist,res1,temp2,SymACond,res2,CL,CLRes,res3,res4,solcond,p1solcond],solcond:[],
+  for vari:1 thru pi@degree do (
+    symvarlist:delete(pi@sollist[vari],pi@sollist),
+    res1:elem([pi@degree],tcontract(rat(product(x-pi@sollist[i],i,1,pi@degree),symvarlist),symvarlist),symvarlist),
+    temp2:rat(res1-pi@polynomial),
+    SymACond:solve(makelist(coeff(temp2,x,i)=0,i,1,pi@degree-1),makelist(eval_string(sconcat("e",i)),i,1,pi@degree-1)),
+    ratvars(a,b,c,d,e,V),
+    res2:rat(1,a,b,c,d,e,V),
+    block([permlist:listify(permutations(symvarlist))],
+      for perm in permlist do (
+        dbg_gal_print_progress(string([vari,perm])),
+        res2:fasttimes(rat(V-gal_phi(append(makelist(perm[i],i,1,vari-1),[pi@sollist[vari]],makelist(perm[i],i,vari,pi@degree-1)))),res2))),
+    dbg_gal_print_progress(string(length(res2))),
+    CL:makelist(coeff(res2,V,i),i,0,(pi@degree-1)!),
+    dbg_gal_print_progress(string([length(CL),last(CL)])),
+    CLRes:make_array (any, length(CL)+1),
+    for i:1 thru length(CL) do (block[shortForm],
+      if not(numberp(CL[i])) then dbg_gal_print_progress(string([i,length(CL[i])])),
+      shortForm:tcontract(CL[i],symvarlist),
+      if not(numberp(shortForm)) then dbg_gal_print_progress(string([i,length(shortForm)])),
+      CLRes[i]:ev(elem([pi@degree-1],shortForm,symvarlist),SymACond,eval)),
+    /*
+    CLRes:map(lambda([cf],block([pp],ev(elem([pi@degree-1],tcontract(cf,symvarlist),symvarlist),SymACond,eval))),CL),
+    */
+    res3:0,for i:1 thru (pi@degree-1)!+1 do res3:res3+CLRes[i]*V^(i-1),
+    p6:rat(expand(res3)),
+    gb:poly_buchberger([subst(pi@sollist[vari],x,pi@polynomial),pi@gal_minpoly,p6],[pi@sollist[vari],V]),
+    res4:solve(last(gb),pi@sollist[vari]),
+    res4:solve(gb[last(sublist_indices(gb,lambda([poly],gal_linearp(poly,pi@sollist[vari]))))],pi@sollist[vari]),
+    push(define(solV[vari](V),rhs(res4[1])),solcond)),
+  pi@solcond:solcond,
+  p1solcond:makelist(pi@sollist[i]=solV[i](V),i,1,pi@degree),
+  pi@vncond:ev(pi@vcond,p1solcond,solcond,ratsimp,eval))$
+
+gal_galois_group(pi):=block([glist],
+  glist:[],
+  for i:1 thru pi@degree! do (
+    if remainder(subst(ev(V[i],pi@vncond),V,pi@gal_minpoly),pi@gal_minpoly)=0 then (
+      push(i,glist))),
+  pi@galois_group_index:reverse(glist))$
+
+gal_sol_V2(pi):=block([polylist,x,V,gb,solcond:[],res,p1solcond,fpprec:pi@prec],local(x,V),
+  polylist:append(
+    sum_prod_roots(pi@sollist,pi@polynomial,x),
+    [pi@gal_minpoly],
+    [ev(V[1],pi@vcond,eval)-V]),
+  gb:poly_reduced_grobner(polylist,append(pi@sollist,[V])),
+  for i:1 thru length(pi@sollist) do (
+    res:solve(gb[last(sublist_indices(gb,lambda([poly],gal_linearp(poly,pi@sollist[i]))))],pi@sollist[i]),
+    push(define(solV[i](V),rhs(res[1])),solcond)),
+  pi@solcond:solcond,
+  p1solcond:makelist(pi@sollist[i]=solV[i](V),i,1,pi@degree),
+  pi@vncond:ev(pi@vcond,p1solcond,solcond,ratsimp,eval))$
+
+gal_sol_V4(pi):=block([rootVlist,solcond:[]],
+  rootVlist:map(rhs,solve(factor(pi@polynomial,pi@gal_minpoly),x)),
+  if length(rootVlist)#length(pi@sollist) then error("error gal_sol_V3: two args factor seems not working."),
+  for a in permutations(rootVlist) do if is(ratsimp(gal_phi(a))=V) then block([p1solcond],
+    pi@solcond:makelist(define(solV[i](V),a[i]),i,1,pi@degree),
+    p1solcond:makelist(pi@sollist[i]=solV[i](V),i,1,pi@degree),
+    pi@vncond:ev(pi@vcond,p1solcond,solcond,ratsimp,eval),
+    return()),
+  pi@vncond)$
+  
+
+gal_sol_V3(pi):=block([facpoly,Vnum,facpolynum,polylist,mindex,solcond:[]],
+  facpoly:args(num(factor(pi@polynomial,pi@gal_minpoly))),
+  if length(facpoly)#length(pi@sollist) then error("error gal_sol_V3: two args factor seems not working."),
+  Vnum:ev(rhs(pi@vcond[1]),pi@numsollist),
+  facpolynum:map(lambda([eqn],expand(ev(rhs(solve(eqn,x)[1]),V=ev(rhs(PS@vcond[1]),PS@numsollist)))),facpoly),
+  for i:1 thru pi@degree do block([vl,minv,mindex],
+    vl:cabs(ev(facpolynum-rhs(pi@numsollist[i][1]),expand)),
+    minv:lmin(vl),
+    [mindex]:sublist_indices(vl,lambda([x],is(x=minv))),
+    push(define(solV[i](V),rhs(solve(facpoly[mindex],x)[1])),solcond)),
+  pi@solcond:solcond,
+  p1solcond:makelist(pi@sollist[i]=solV[i](V),i,1,pi@degree),
+  pi@vncond:ev(pi@vcond,p1solcond,solcond,ratsimp,eval))$
+
+gal_galois_group2(pi):=block([glist:[],glist2:[],Vnum,fpprec:pi@prec,V],local(V),
+  for i:1 thru pi@degree! do (
+    Vnum:ev(rhs(pi@vcond[i]),pi@numsollist,expand,numer),
+    if round(cabs(ev(pi@gal_minpoly,V=Vnum,eval,expand,numer)))=0 then push(i,glist)),
+  pi@galois_group_index:reverse(glist))$
+
+/*
+gal_phi(xlist):=ev(sum(xlist[i]*cl[i],i,1,length(xlist)),cl:[1,-1,2,5,0,3,2]);
+p1:x^4+2*x^3+3*x^2+4*x+5;
+PS:gal_init_polynomial_info(p1)$
+gal_minimal_polynomial_V2(PS);
+gal_sol_V4(PS)$
+gal_galois_group2(PS);
+*/
+

@@ -1,0 +1,105 @@
+/* -*-Maxima-*- */
+/*
+;; Copyright (C) 2018, 2019 Yasuaki Honda
+;; Stage4.mac
+;; This file is part of GaloisGroupSolver package.
+;;
+;; This program is free software; you can redistribute it and/or
+;; modify it under the terms of the GNU General Public License as
+;; published by the Free Software Foundation; either version 2 of
+;; the License, or (at your option) any later version.
+;;
+;; This program is distributed in the hope that it will be
+;; useful, but WITHOUT ANY WARRANTY; without even the implied
+;; warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+;; PURPOSE.  See the GNU General Public License for more details.
+;;
+;; You should have received a copy of the GNU General Public
+;; License along with this program; if not, see
+;; <http://www.gnu.org/licenses/>.
+*/
+
+defstruct(StageInfo(ExtensionList,AC,NSG1,NSG2,gv,Conditions));
+
+Stage(nsg1,nsg2,gv,vncond,C,AC):=block([p1,rel,newAC,Zeta,h,R,CC],local(Zeta,h,theta), 
+  p1:nsg1@degree/nsg2@degree, h:make_array(any,p1),
+  if p1#2 and p1#3 and p1#5 then error("p1 must be either 2,3, or 5, but ", p1),
+  newAC:AC+1,
+  if p1=2 then Zeta[2]:-1 elseif p1>2 and assoc(Z[p1],C)=false then push([Zeta[p1],sum(Zeta[p1]^k,k,0,p1-1)],C),
+
+  block([grp,min_quo_elem:first(setdifference(setify(nsg1@index_elements),setify(nsg2@index_elements)))],
+    local(grp),
+    for i:0 thru p1-1 do (
+      if i=0 then grp[i]:nsg2@index_elements else (
+        grp[i]:makelist(gr_mult(min_quo_elem,elem,nsg1),elem,grp[i-1])),
+      h[i]:product(x-remainder(ev(V[grp[i][j]],vncond),gv),j,1,length(grp[i])))),
+  block([f:rat(ef_polynomial_reduction(remainder(sum(h[j]*(Zeta[p1]^j),j,0,p1-1)/p1,gv),C))],
+    dbg_gal_print('f=f),
+    dbg_gal_print(hipow(f,x)),
+    R:coeff(f,x,hipow(f,x))),
+  block([ans,extensions,newElem,invNewElem,DnewElem,newGV,newC:[],condF:[]],newElem:alpha[AC],invNewElem:inv[AC],
+    vars:map(first,C),
+    if member(Zeta[p1],vars) then (
+      vars:append(delete(Zeta[p1],vars),[Zeta[p1]])),
+    extensions:reverse(map(second,C)),
+    ans:poly_reduced_grobner(append(extensions,[gv,R-newElem]),append([V,newElem],vars)),
+    newGV:for x in ans do if newGV_p(x,gv,p1) then return(x),
+    if newGV=done then error("Stage: newGV can not be found."),
+    ans:delete(gv,delete(newGV,ans)),
+    block([varList:map(first,C),filter:[],fdone:false],
+      for f in ans do (
+        if length(listofvars(f))=1 and not(atom(listofvars(f)[1])) and op(listofvars(f)[1])='Zeta then (
+          ans:delete(f,ans))
+        else (
+          fdone:false,
+          for var in reverse(append(varList,[newElem])) do (
+            if not(atom(var)) and op(var)='Zeta then ("ignore")
+            elseif extElemDef_p(f,var) then (push([var,f],newC),fdone:true,ans:delete(f,ans))),
+          if not(fdone) then push(f, condF)))),
+    dbg_gal_print('condF=condF),
+    dbg_gal_print('ans=ans),
+    dbg_gal_print(setequalp(setify(condF),setify(ans))),
+    block([si:new(StageInfo)],
+      si@AC:newAC,
+      si@NSG1:nsg1,si@NSG2:nsg2,
+      si@gv:newGV,
+      si@ExtensionList:mergeDefVars(C,newC),
+      si@Conditions:ans,
+      return(si))))$
+        
+/* Extract information from the results of Grobner basis computation
+1. Definition formula for elements for radical extensions (newly introduced alpha[k])
+2. Definition formula for root of unity (Z[k])
+3. Minimaul polynomial of V in the extended field
+4. other formula, regarded as additional conditions to the definition for radical extension
+*/
+
+/* obtain only 1 by removing 2 from defVarList */
+rootDefVar(defVarList):=(for x in [Z[3],Z[5],Zeta[3],Zeta[5]] do defVarList:delete(x,defVarList),defVarList)$
+
+/*
+determine if polynomial f of var is 1.
+(var in f) and (var appear in a single term in f) and (coeff of var term is a number) and (V not in f) and (var is the newest in f)
+*/
+extElemDef_p(f,var):=block([maxdeg:hipow(f,var),lvars:listofvars(f),cf],cf:coeff(f,var,maxdeg),
+  member(var,lvars) and not(member(var,listofvars(f-cf*var^maxdeg)))
+  and numberp(cf) and not(member('V,lvars))
+  and not(some(lambda([x],newerVar_p(x,var)),setify(lvars))))$
+
+newGV_p(f,oldgv,p):=if hipow(f,'V)=hipow(oldgv,'V)/p then true else false$
+
+/* returen if var1 is newer than var2 then return true else false */
+newerVar_p(var1,var2):=(
+  if atom(var1) or atom(var2) then false
+  elseif op(var1)#op(var2) then false
+  elseif args(var1)[1]>args(var2)[1] then true else false)$
+  
+
+/* merge C and newC by updating C with newC */
+mergeDefVars(C,newC):=block([mergedC:[],newDef],
+  for newElem in newC do (
+    if assoc(newElem[1],C)=false then push(newElem,C)),
+  for oldElem in C do (
+    if (newDef:assoc(oldElem[1],newC))=false then push(oldElem,mergedC)
+    else push([oldElem[1],newDef],mergedC)),
+  reverse(mergedC))$

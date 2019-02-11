@@ -1,0 +1,105 @@
+/* -*-Maxima-*- */
+/*
+;; Copyright (C) 2018, 2019 Yasuaki Honda
+;; SSquintic.mac
+;; This file is part of GaloisGroupSolver package.
+;;
+;; This program is free software; you can redistribute it and/or
+;; modify it under the terms of the GNU General Public License as
+;; published by the Free Software Foundation; either version 2 of
+;; the License, or (at your option) any later version.
+;;
+;; This program is distributed in the hope that it will be
+;; useful, but WITHOUT ANY WARRANTY; without even the implied
+;; warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+;; PURPOSE.  See the GNU General Public License for more details.
+;;
+;; You should have received a copy of the GNU General Public
+;; License along with this program; if not, see
+;; <http://www.gnu.org/licenses/>.
+*/
+
+dirpath:"";
+load(concat(dirpath,"Gal.mac"));
+load(concat(dirpath,"FiniteGroup.mac"));
+load(concat(dirpath,"ExtendedField.mac"));
+load(concat(dirpath,"Stage4.mac"));
+load(concat(dirpath,"Verify.mac"));
+
+/*
+compile_file(concat(dirpath,"Gal.mac"));
+compile_file(concat(dirpath,"FiniteGroup.mac"));
+compile_file(concat(dirpath,"ExtendedField.mac"));
+compile_file(concat(dirpath,"Stage3.mac"));
+
+load(concat(dirpath,"Gal.fasl"));
+load(concat(dirpath,"FiniteGroup.fasl"));
+load(concat(dirpath,"ExtendedField.fasl"));
+load(concat(dirpath,"Stage3.fasl"));
+*/
+
+/*
+p1:x^3-2;
+p1:x^5-2;
+p1:x^5-5*x+12;
+p1:x^5+11*x+44;
+p1:x^5+20*x+32;
+p1:x^5+x^4-4*x^3-3*x^2+3*x+1;
+p1:x^5+100*x^2+1000;
+p1:x^4-2*x^3+2*x^2+2;
+*/
+
+debug_gal:false;
+progress_flag:true;
+gal_phi(xlist):=ev(sum(xlist[i]*cl[i],i,1,length(xlist)),cl:[1,-1,2,-5,0,0]);
+p1:x^5-3;
+PS:gal_init_polynomial_info(p1)$
+gal_minimal_polynomial_V2(PS);
+gal_sol_V4(PS)$
+gal_galois_group2(PS);
+
+FG:new(FiniteGroup);
+gr_gen_tables(FG,PS@solperm,PS@galois_group_index)$
+NSGS:gr_subnormal_series(FG)$
+map(describe_FG,NSGS)$
+for i:1 thru length(NSGS)-1 do print(NSGS[i]@degree/NSGS[i+1]@degree)$
+
+
+
+SI2[0]:new(StageInfo([],1,false,false,PS@gal_minpoly,[]))$
+SI2[i]:Stage(NSGS[i],NSGS[i+1],subst(V,x,SI2[i-1]@gv),PS@vncond,SI2[i-1]@ExtensionList,SI2[i-1]@AC),i:1$
+SI2[i]@gv,i:1;
+SI2[i]:Stage(NSGS[i],NSGS[i+1],subst(V,x,SI2[i-1]@gv),PS@vncond,SI2[i-1]@ExtensionList,SI2[i-1]@AC),i:2$
+SI2[i]@gv,i:2;
+SI2[i]:Stage(NSGS[i],NSGS[i+1],subst(V,x,SI2[i-1]@gv),PS@vncond,SI2[i-1]@ExtensionList,SI2[i-1]@AC),i:3$
+SI2[i]@gv,i:3;
+SI2[i]:Stage(NSGS[i],NSGS[i+1],subst(V,x,SI2[i-1]@gv),PS@vncond,SI2[i-1]@ExtensionList,SI2[i-1]@AC),i:4$
+SI2[i]@gv,i:4;
+
+/* Compute solutions */
+SolN:length(PS@sollist);
+StageN:length(NSGS)-1;
+for i:1 thru SolN do (
+  x[i]:remainder(ev(solV[i](V),PS@solcond),subst(V,x,SI2[0]@gv)),
+  for gx in makelist(SI2[j]@gv,j,1,StageN) do (
+    x[i]:remainder(x[i],subst(V,x,gx))),
+  x[i]:ratexpand(ef_polynomial_reduction(x[i],SI2[StageN]@ExtensionList)));
+
+/* Verify the solutions with numeric calcuration */
+fpprec:100;fpprintprec:20;
+
+numEnvList:NumericRadicalEnv(
+  reverse(SI2[StageN]@ExtensionList),
+  [],
+  SI2[StageN]@gv,
+  SI2[StageN]@Conditions)$
+
+/* Solutions based on Galois group */
+[k,sollist]:Check_eq(p1,makelist(x[i],i,SolN),numEnvList);
+numEnvList[k];
+sollist;
+/* Solutions by allroots(p1) */
+allroots(p1);
+
+
+

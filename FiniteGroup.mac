@@ -1,0 +1,101 @@
+/* -*-Maxima-*- */
+/*
+;; Copyright (C) 2018, 2019 Yasuaki Honda
+;; FiniteGroup.mac
+;; This file is part of GaloisGroupSolver package.
+;;
+;; This program is free software; you can redistribute it and/or
+;; modify it under the terms of the GNU General Public License as
+;; published by the Free Software Foundation; either version 2 of
+;; the License, or (at your option) any later version.
+;;
+;; This program is distributed in the hope that it will be
+;; useful, but WITHOUT ANY WARRANTY; without even the implied
+;; warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+;; PURPOSE.  See the GNU General Public License for more details.
+;;
+;; You should have received a copy of the GNU General Public
+;; License along with this program; if not, see
+;; <http://www.gnu.org/licenses/>.
+*/
+
+defstruct(FiniteGroup(permutations=false, degree=0, index_elements=false, mult_table=false, inv_table=false, table_size=0));
+TeXFiniteGroup(fg):=concat("Group",tex1(fg@index_elements));
+texput(FiniteGroup, TeXFiniteGroup);
+
+describe_FG(FG):=print(sconcat("FiniteGroup",FG@index_elements))$
+
+/* FG: instance of FiniteGroup, M:Galois style permutation group in matrix form */
+gr_gen_tables(FG,M,IE):=block([identlist, internal_mult],
+  /* replace a,b,c with 1,2,3 */
+  identlist:M[1],
+  M:fullmap(lambda([elem],first(sublist_indices(identlist,lambda([x],elem=x)))),M),
+  /* define mult op on M */
+  internal_mult:lambda([i1,i2,M],block([r1,r2,res],
+      if not(member(i1,IE)) or not(member(i2,IE)) then error("internal_mult: out of index:", i1, i2, IE),
+      r1:M[i1],r2:M[i2],
+      res:makelist(r2[r1[i]],i,M[1]),
+      first(sublist_indices(M,lambda([r],r=res))))),
+  block([tbl,inv_tbl,sz],sz:length(M), tbl:make_array(fixnum,sz,sz),inv_tbl:make_array(fixnum,sz),
+    for i in IE do (
+      for j in IE do (
+        tbl[i-1,j-1]:apply(internal_mult,[i,j,M]),
+        if tbl[i-1,j-1]=1 then inv_tbl[i-1]:j)),
+    FG@permutations:makelist([i,M[i]],i,1,length(M)),
+    FG@degree:length(IE),
+    FG@index_elements:IE,
+    FG@table_size:sz,
+    FG@inv_table:inv_tbl,
+    FG@mult_table:tbl))$
+
+gr_mult(i1,i2,FG):=(FG@mult_table)[i1-1,i2-1];
+gr_inv(i,FG):=(FG@inv_table)[i-1];
+
+gr_normal_subgroup_with(i,FG):=block([G,H,aH,prevlen],H:{i},G:FG@index_elements,
+  do (
+    aH:{},
+    prevlen:cardinality(H),
+    for tau in H do (
+      for j in G do (
+        aH:adjoin(gr_mult(j, gr_mult(tau, gr_inv(j,FG), FG), FG),aH))),
+    H:union(H,aH),
+    aH:{},
+    for j in H do (
+      for k in H do (
+        aH:adjoin(gr_mult(j,k,FG),aH))),
+    H:union(H,aH),
+    if (cardinality(H)>FG@degree/2) then return(false),
+    if (prevlen=cardinality(H)) then return(block([normal_subg],
+      normal_subg:new(FiniteGroup),
+      normal_subg@permutations:FG@permutations,
+      normal_subg@degree:cardinality(H),
+      normal_subg@index_elements:listify(H),
+      normal_subg@mult_table:FG@mult_table,
+      normal_subg@inv_table:FG@inv_table,
+      normal_subg@table_size:FG@table_size,
+      normal_subg))
+      ))$
+
+gr_normal_subgroup_max(FG):=block([nsgmax,nsg],nsgmax:false,
+  for elem in FG@index_elements do (
+    if (nsg:gr_normal_subgroup_with(elem,FG))#false then (
+      if (nsgmax=false or nsgmax@degree<nsg@degree) then nsgmax:nsg)),
+  return(nsgmax))$
+
+gr_subnormal_series(FG):= if FG@degree=1 then [FG] else cons(FG,gr_subnormal_series(gr_normal_subgroup_max(FG)));
+
+/* test code */
+/*
+FG:new(FiniteGroup);
+
+gr_gen_tables(FG,listify(permutations([a,b,c])),[1,2,3,4,5,6]);
+
+gr_mult(2,3,FG);
+gr_mult(2,gr_inv(2,FG),FG);
+
+gr_subnormal_series(FG);
+
+FG2:new(FiniteGroup);
+gr_gen_tables(FG2,listify(permutations([a,b,c,d])),makelist(i,i,1,24))$
+S:gr_subnormal_series(FG2);
+*/

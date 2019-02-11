@@ -1,0 +1,109 @@
+/* -*-Maxima-*- */
+/*
+;; Copyright (C) 2018, 2019 Yasuaki Honda
+;; ExtendedField.mac
+;; This file is part of GaloisGroupSolver package.
+;;
+;; This program is free software; you can redistribute it and/or
+;; modify it under the terms of the GNU General Public License as
+;; published by the Free Software Foundation; either version 2 of
+;; the License, or (at your option) any later version.
+;;
+;; This program is distributed in the hope that it will be
+;; useful, but WITHOUT ANY WARRANTY; without even the implied
+;; warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+;; PURPOSE.  See the GNU General Public License for more details.
+;;
+;; You should have received a copy of the GNU General Public
+;; License along with this program; if not, see
+;; <http://www.gnu.org/licenses/>.
+*/
+
+/*
+p[k]:prime,
+alpha[k]:p[k]-th root of some number A[k], hence alpha[k]^p[k]-A[k]=0
+zeta[p[k]]:p[k]-th root of 1, hence zeta[p[k]]^(p[k]-1)+...+zeta[p[k]]+1=0
+
+Calculate multiple and quotient of such algebraic numbers
+*/
+/*
+P,Q: Multi-variate polynomial whose variables are in conditions
+conditions: list of [var, cond]
+
+ef_quotient(P,C);
+*/
+
+ef_polynomial_reduction(P,C):=(
+  for i:1 thru length(C) do (
+    P:remainder(P,C[i][2],C[i][1])),
+  P);
+
+ef_mult(P,Q,C):=ef_polynomial_reduction(P*Q,C);
+
+
+ef_divide(P,Q,C):= if numberp(Q) then P/Q else block([exp,c,var,eqn,degree,P1:P,Q1:Q],local(c),
+  if ef_polynomial_reduction(Q,C)=0 then error("ef_divide:Division by zero 1: P",ef_polynomial_reduction(P,C),"Q=",Q,"C=",C),
+  for CT in C do block(var:CT[1],eqn:CT[2],degree:hipow(eqn,var),
+    while ef_polynomial_reduction(Q,[CT])=0 do (
+      if ef_polynomial_reduction(P,[CT])=0 then (
+        exp:ratsimp(P/Q),
+        [P,Q]:[num(exp),denom(exp)],return())
+      else (
+        error("ef_divide:Division by zero 2: P",ef_polynomial_reduction(P,[CT]),"Q=",Q,"CT"=CT))),
+    exp:expand(remainder(expand(P-Q*sum(c[i]*var^i,i,0,degree-1)),eqn,var)),
+    block([syseqn,sol],
+      syseqn:makelist(coeff(exp,var,i),i,0,degree-1),
+      %rnum_list:[],
+      sol:solve(syseqn,makelist(c[i],i,0,degree-1)),dbg_gal_print('sol=sol),if sol=[] then dbg_gal_print('P=P,'Q=Q),
+      if length(%rnum_list)>0 then (
+        error("ef_dvide:coefficients cannot be determined.P,Q:",P,Q)),
+      exp:xthru(sum(ev(c[i],sol,makelist(newvar=1,newvar,%rnum_list))*var^i,i,0,degree-1)),
+      [P,Q]:[num(exp),denom(exp)])),
+  dbg_gal_print("exp*Q should be P",ef_polynomial_reduction(P,C),ef_mult(exp, Q1, C)),
+  return(exp))$
+
+/*
+ef_divide(P,Q,C):=block([exp,ga,temp,c],local(c),
+  temp:P/Q,
+  for CT in C do block(var:CT[1],eqn:CT[2],degree:hipow(eqn,var),
+    ga:sum(c[j]*var^j,j,0,degree-1),
+    temp:expand(remainder(num(xthru(expand(temp-ga))),eqn,var)),dbg_gal_print('var=var,'temp=rat(temp,var),'eqn=eqn),
+    block([syseqn,sol],
+      syseqn:makelist(coeff(temp,var,i),i,0,degree-1),
+      sol:solve(syseqn,makelist(c[i],i,0,degree-1)),
+      temp:ev(ga,sol,eval))),
+  return(expand(ratsimp(temp))))$
+*/
+    
+
+ef_pthroot(F,p,C):=block([m,f1,c,syseqn,sol,x],m:hipow(F,x)/p,sol:[],
+  if not(integerp(m)) then error("m is not divisable by p") else (
+    if coeff(F,x,m*p)#1 then error("F is not monic") else (
+      f1:x^m+sum(c[i]*x^i,i,0,m-1),
+      syseqn:makelist(coeff(expand(F-expand(f1^p)),x,i),i,0,m*p),
+      /*f1^p contains (x^m)^(p-1)*c[i]*x^i=c[i]*x^(m*(p-1)+i)*/
+      for i in makelist(m-1-i,i,0,m-1) do block([deg], deg:m*(p-1)+i,
+        push(solve(ev(syseqn[deg+1],sol),c[i]),sol)),
+      if ef_polynomial_reduction(ratsimp(F-ev(f1,sol)^p),C)#0 then error("No such pthroot"),
+      return(ev(f1,sol)))));
+      
+  
+
+/*
+C:[[alpha[2],alpha[2]^3-3*(1+alpha[1]+2*zeta[3])],
+ [zeta[3],zeta[3]^2+zeta[3]+1],
+ [alpha[1],alpha[1]^2+6],
+ [zeta[2],zeta[2]^2+1]];
+
+P:3*alpha[2]+2*alpha[1]*alpha[2]^2-3*alpha[2]*zeta[3]-3*alpha[2]^2*zeta[3]+alpha[1]*alpha[2]^2*zeta[3];
+Q:3-alpha[2]-alpha[1]*alpha[2]+alpha[2]*zeta[3]-alpha[1]*alpha[2]*zeta[3]-alpha[2]^2*zeta[3];
+ef_mult(P,Q,C);
+
+P:54;
+Q:3-alpha[2]-alpha[1]*alpha[2]+alpha[2]*zeta[3]-alpha[1]*alpha[2]*zeta[3]-alpha[2]^2*zeta[3];
+R:3*alpha[2]+2*alpha[1]*alpha[2]^2-3*alpha[2]*zeta[3]-3*alpha[2]^2*zeta[3]+alpha[1]*alpha[2]^2*zeta[3];
+P/Q=R
+
+ef_divide(P,Q,C);
+
+*/

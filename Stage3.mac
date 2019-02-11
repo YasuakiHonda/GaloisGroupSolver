@@ -1,0 +1,100 @@
+/* -*-Maxima-*- */
+/*
+;; Copyright (C) 2018, 2019 Yasuaki Honda
+;; Stage3.mac
+;; This file is part of GaloisGroupSolver package.
+;;
+;; This program is free software; you can redistribute it and/or
+;; modify it under the terms of the GNU General Public License as
+;; published by the Free Software Foundation; either version 2 of
+;; the License, or (at your option) any later version.
+;;
+;; This program is distributed in the hope that it will be
+;; useful, but WITHOUT ANY WARRANTY; without even the implied
+;; warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+;; PURPOSE.  See the GNU General Public License for more details.
+;;
+;; You should have received a copy of the GNU General Public
+;; License along with this program; if not, see
+;; <http://www.gnu.org/licenses/>.
+*/
+
+defstruct(StageInfo(ExtensionList,AC,NSG1,NSG2,gv,Conditions));
+
+check_Zeta_p_in_C(p1,C):=block([cp,rel:false,Zeta,tmp],local(Zeta),
+  cp:ratsimp((Zeta[p1]^p1-1)/(Zeta[p1]-1)),dbg_gal_print("KKK",cp),
+  for CT in C do (
+    if length(listofvars(CT[2]))=1 then (
+      tmp:subst(AAA,CT[1],CT[2]),
+      if op(num(factor(cp,tmp)))="*" then (
+        rel:first(subst(CT[1],AAA,solve(first(num(factor(cp,tmp))),AAA))),
+        dbg_gal_print('rel=rel,'C=C)))),
+  return(rel))$
+
+Stage(nsg1,nsg2,gv,vncond,C,AC):=block([p1,rel,newAC,Zeta,h,theta,CC],local(Zeta,h,theta), 
+  p1:nsg1@degree/nsg2@degree, h:make_array(any,p1), TH:h,
+  if p1#2 and p1#3 and p1#5 then error("p1 must be either 2,3, or 5, but ", p1),
+  newAC:AC+1,
+
+  rel:check_Zeta_p_in_C(p1,C),
+  dbg_gal_print("check_Zeta_p_in_C1",C,rel),
+  if p1=2 then (
+    Zeta[p1]:-1)
+  elseif assoc(Zeta[p1],C)=false then (
+    push([Zeta[p1],ratsimp((Zeta[p1]^p1-1)/(Zeta[p1]-1))],C)),
+  CC:copylist(C),
+  dbg_gal_print("tatata",length(listofvars(denom(rhs(rel))))),
+  if rel#false then (
+    if length(listofvars(denom(rhs(rel))))>0 then (
+      dbg_gal_print("taho",C),
+      rel:lhs(rel)=ef_divide(num(rhs(rel)),denom(rhs(rel)),C),
+      C:map(lambda([x],[first(x),if first(x)#lhs(rel) then ev(second(x),rel) else second(x)]),C),
+      block([ztop:pop(C)],C:rest(reverse(C)),push(ztop,C),C:reverse(C)))),
+  dbg_gal_print("heiho",C,rel),
+  gv:ev(gv,rel),
+  
+  block([grp,min_quo_elem:first(setdifference(setify(nsg1@index_elements),setify(nsg2@index_elements)))],
+    local(grp),
+    for i:0 thru p1-1 do (
+      if i=0 then grp[i]:nsg2@index_elements else (
+        grp[i]:makelist(gr_mult(min_quo_elem,elem,nsg1),elem,grp[i-1])),
+      h[i]:product(x-remainder(ev(V[grp[i][j]],vncond),gv),j,1,length(grp[i])))),
+  theta[0]:ef_polynomial_reduction(remainder(sum(h[j],j,0,p1-1)/p1,gv),C),
+  block([A,A_inv,a,b,Q,q,temp,NZ:0],local(A,A_inv,a,b,Q,q),
+    for i:1 thru p1-1 do (
+      temp:ratexpand(ef_polynomial_reduction(remainder(sum(h[j]*(Zeta[p1]^(i*j)),j,0,p1-1)/p1,gv),C)),
+      temp:ev(temp,rel),
+      a[i]:coeff(temp,x,hipow(temp,x)),
+      temp:ratexpand(ef_polynomial_reduction(ratexpand(remainder(temp^p1,gv)),C)),
+      temp:ev(temp,rel),
+      dbg_gal_print('a[i]=a[i],'temp=temp),
+      A[i]:coeff(temp,x,hipow(temp,x)),dbg_gal_print('A[i]=A[i]),
+      A_inv[i]:errcatch(ef_divide(1,A[i],C)),dbg_gal_print('A_inv[i]=A_inv[i],C),
+      if A_inv[i]#[] and listp(A_inv[i]) then A_inv[i]:first(A_inv[i]),
+      if A_inv[i]=[] then ([Q[i],q[i]]:[0,0],[A[i],a[i]]:[0,0])
+      elseif temp-A[i]=0 then [Q[i],q[i]]:[1,1]
+      else (
+        Q[i]:ratexpand(ef_mult(temp,A_inv[i],C)),
+        q[i]:ratexpand(ef_pthroot(Q[i],p1,C)))),
+    for i:1 thru p1-1 do (
+      if A_inv[i]#[] then (NZ:i,return())),dbg_gal_print('NZ=NZ),
+    if NZ#0 then (
+      push([alpha[AC],alpha[AC]^p1-A[NZ]],C),push(first(C),CC),
+      for i:1 thru p1-1 do (
+        if i#NZ then (
+          b[i]:ef_mult(remainder(ef_mult(a[i],a[NZ]^(p1-i),C),gv),A_inv[NZ],C),dbg_gal_print("TT",a[i],a[NZ],A_inv[NZ]),
+          a[i]:ratexpand((alpha[AC]^i)*b[i]))),
+      a[NZ]:alpha[AC],
+      for i:1 thru p1-1 do (theta[i]:ef_mult(a[i],q[i],C),dbg_gal_print('theta[i]=theta[i])))
+    else (
+      for i:1 thru p1-1 do theta[i]:0)),
+  si:new(StageInfo),
+  si@AC:newAC,
+  si@NSG1:nsg1,
+  si@NSG2:nsg2,
+  si@gv:ratexpand(ef_polynomial_reduction(sum(theta[j],j,0,p1-1),C)),
+  si@ExtensionList:CC,
+  si@Conditions:[],
+  si)$
+
+        

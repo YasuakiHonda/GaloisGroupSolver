@@ -1,0 +1,143 @@
+/* -*-Maxima-*- */
+/*
+;; Copyright (C) 2018, 2019 Yasuaki Honda
+;; GaloisGroupSolver2.mac
+;; This file is part of GaloisGroupSolver package.
+;;
+;; This program is free software; you can redistribute it and/or
+;; modify it under the terms of the GNU General Public License as
+;; published by the Free Software Foundation; either version 2 of
+;; the License, or (at your option) any later version.
+;;
+;; This program is distributed in the hope that it will be
+;; useful, but WITHOUT ANY WARRANTY; without even the implied
+;; warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+;; PURPOSE.  See the GNU General Public License for more details.
+;;
+;; You should have received a copy of the GNU General Public
+;; License along with this program; if not, see
+;; <http://www.gnu.org/licenses/>.
+*/
+
+dirpath:pathname_directory(load_pathname)$
+print(dirpath);
+
+load(concat(dirpath,"Gal.mac"));
+load(concat(dirpath,"FiniteGroup.mac"));
+load(concat(dirpath,"ExtendedField.mac"));
+load(concat(dirpath,"Stage3.mac"));
+load(concat(dirpath,"Verify.mac"));
+
+/*
+compile_file(concat(dirpath,"Gal.mac"));
+compile_file(concat(dirpath,"FiniteGroup.mac"));
+compile_file(concat(dirpath,"ExtendedField.mac"));
+compile_file(concat(dirpath,"Stage4.mac"));
+
+load(concat(dirpath,"Gal.fasl"));
+load(concat(dirpath,"FiniteGroup.fasl"));
+load(concat(dirpath,"ExtendedField.fasl"));
+load(concat(dirpath,"Stage4.fasl"));
+*/
+
+/*
+SolveSolvable(x^2-2)$
+SolveSolvable(x^3-3*x-1)$
+SolveSolvable(x^3-2)$
+
+SolveSolvable(x^4-2)$
+SolveSolvable(x^4+x^2-1)$
+SolveSolvable(x^4-2*x^3+2*x^2+2)$
+SolveSolvable(x^4+2*x^3+3*x^2+4*x+5)$
+SolveSolvable(x^4+x+1)$
+
+SolveSolvable(x^5-3)$
+SolveSolvable(x^5-5*x+12)$
+SolveSolvable(x^5+20*x+32)$
+SolveSolvable(x^5+11*x+44)$
+SolveSolvable(x^5+x^4-4*x^3-3*x^2+3*x+1)$
+SolveSolvable(x^5+100*x^2+1000)$
+
+SolveSolvable(x^6-2)$
+SolveSolvable(x^6+x^3+1)$
+*/
+/*
+Followings are non-solvable polynomials. They take very long time (24 hours or more).
+SolveSolvable(x^5+10*x^3-10*x+4)$
+SolveSolvable(x^5+20*x+16)$
+*/
+
+gal_phi(xlist):=ev(sum(xlist[i]*cl[i],i,1,length(xlist)),cl:[1,-1,2,-3,5,0]);
+
+get_matrix_permutation_group(PS):=block([elemlist:[]],
+  for i in PS@galois_group_index do push(PS@solperm[i],elemlist),
+  apply(matrix, reverse(elemlist)))$
+
+SolveSolvable(p1):=block([PS,FG,NSGS,SI,SolN,StageN],
+  /* Compute Galois Group of p1 */
+  PS:gal_init_polynomial_info(p1),
+  gal_minimal_polynomial_V2(PS),
+  print("Minimal polynomial of V"),
+  print(PS@gal_minpoly),
+  gal_sol_V4(PS),
+  gal_galois_group2(PS),
+  print("Galois Group of", p1),
+  print(get_matrix_permutation_group(PS)),
+  
+  /* Compute subnormal series of the Galois Group */
+  FG:new(FiniteGroup),
+  gr_gen_tables(FG,PS@solperm,PS@galois_group_index),
+  NSGS:gr_subnormal_series(FG),
+  print("Subnormal series and quotients of orders"),
+  map(describe_FG,NSGS),
+  /* for i:1 thru length(NSGS)-1 do print(NSGS[i]@degree/NSGS[i+1]@degree), */
+  block([plist:[]],
+    for i:1 thru length(NSGS)-1 do push(NSGS[i]@degree/NSGS[i+1]@degree,plist),
+    if every(primep,plist) then (
+      print(PS@polynomial, "is solvable."))
+    else (
+      print(PS@polynomial, "is not solvable."),
+      return())),
+  
+  save("SolveSolvable_stage0.lisp",PS,FG,NSGS),
+  /*
+  load("SolveSolvable_stage0.lisp");
+  */
+  
+  /* Perform Group reduction, Field Extension steps */
+  SI[0]:new(StageInfo([],1,false,false,PS@gal_minpoly,[])),
+  for i:1 thru length(NSGS)-1 do (
+    SI[i]:Stage(NSGS[i],NSGS[i+1],
+      subst(V,x,SI[i-1]@gv),PS@vncond,SI[i-1]@ExtensionList,SI[i-1]@AC),
+    dbg_gal_print(p=(NSGS[i]@degree)/(NSGS[i+1]@degree),SI[i]@gv)),
+  SolN:length(PS@sollist),
+  StageN:length(NSGS)-1,
+  for i:1 thru SolN do (
+    x[i]:remainder(ev(solV[i](V),PS@solcond),subst(V,x,SI[1]@gv)),
+    for gx in makelist(SI[i]@gv,i,2,StageN) do (
+      x[i]:remainder(x[i],subst(V,x,gx))),
+    x[i]:ratexpand(ef_polynomial_reduction(x[i],SI[StageN]@ExtensionList))),
+  print("Solutions"),
+  for i:1 thru SolN do print('x[i]=x[i]),
+  print("with"),
+  print(SI[StageN]@ExtensionList),
+  if SI[StageN]@Conditions#[] then (
+    print("with additional conditions"),
+    print(SI[StageN]@Conditions)),
+  
+  /* Verify the solutions with numeric calcuration */
+  print("Verification"),
+  block([numEnvList,k,sollist],
+    numEnvList:NumericRadicalEnv(
+      reverse(SI[StageN]@ExtensionList),
+      [],
+      SI[StageN]@gv,
+      SI[StageN]@Conditions),
+    [k,sollist]:Check_eq(p1,makelist(x[i],i,SolN),numEnvList),
+    dbg_gal_print("Numeric values of added radicals"),
+    dbg_gal_print(numEnvList[k]),
+    print("Numeric calcuration of the above solutions"),
+    print(sollist),
+    print("Numeric solutions with allroots(",p1,")"),
+    print(allroots(PS@polynomial))),
+  return([PS,FG,makelist(SI[i],i,1,StageN),makelist(x[i],i,1,SolN)]))$

@@ -1,0 +1,59 @@
+/* -*-Maxima-*- */
+/*
+;; Copyright (C) 2018,2019 Yasuaki Honda
+;; Verify.mac
+;; This file is part of GaloisGroupSolver package.
+;;
+;; This program is free software; you can redistribute it and/or
+;; modify it under the terms of the GNU General Public License as
+;; published by the Free Software Foundation; either version 2 of
+;; the License, or (at your option) any later version.
+;;
+;; This program is distributed in the hope that it will be
+;; useful, but WITHOUT ANY WARRANTY; without even the implied
+;; warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+;; PURPOSE.  See the GNU General Public License for more details.
+;;
+;; You should have received a copy of the GNU General Public
+;; License along with this program; if not, see
+;; <http://www.gnu.org/licenses/>.
+*/
+
+/*
+Find_Solutions(): Solve all the n-th root definition equations in revC in this order and
+check if any of the combinations of them satisfy conditions specified by cond. As cond
+may include V, the definition equation of V is passed in gv.
+
+revC: definition list of n-th root elements added to the base field, in the order of addition
+numEnv: list of numerical values of n-th root elements
+gv: minimal polynomial of V, coefficients are in Q and revC
+cond: equations of variables in revC and gv, whose values must be zero under numEnv.
+
+returns list of numEnv that satisfies cond.
+*/
+
+NumericRadicalEnv(revC,numEnv,gv,cond):=block([vareqn,fsollist,solresult:[],ratprint:false],
+  if revC#[] then (
+    vareqn:pop(revC),
+    fsollist:bfallroots(ev(vareqn[2],bfloat,numEnv,eval,expand,numer)),
+    /* continue search */
+    return(apply(append,map(lambda([x],NumericRadicalEnv(revC,cons(x,numEnv),gv,cond)),fsollist))))
+  else block([gsol],
+    /* we are in a leaf of the search tree */
+    /* let's check */
+      gsol:solve(gv,V),
+      if every(lambda([f],cabs(ev(f,bfloat,gsol,numEnv,eval,expand,numer))<10^(-5)),cond) then (
+        return([numEnv]))
+      else (
+        return([]))))$
+
+Check_eq(p1,xlist,numEnvList):=block([sollist,maxi,ans],
+  for i:1 thru length(numEnvList) do (
+    sollist:ev(xlist,bfloat,numEnvList[i],eval,expand,numer),
+    if every(lambda([x],x<10^(-5)),map(lambda([sol],cabs(ev(p1,x:sol,eval,expand,numer))),sollist)) then (
+      maxi:i,ans:sollist,
+      dbg_gal_print_progress([i,ans]))),
+  return([maxi,ans]))$
+
+    
+        
