@@ -41,8 +41,17 @@ The program is solely written in the Maxima language, so I believe the package r
 ## Files and functions in this package
 This package includes the following files: README.md (this file), SolveSolvable2.mac, Gal.mac, FiniteGroup.mac, ExtendedField.mac, Stage3.mac, Stage4.mac, Verify.mac, License.txt
 
+**Important restrictions:** Polynomials dealt in this package are restricted to meet all of the following conditions:
++ Polynomials must be univariate, with variable name 'x',
++ Polynomials must be monic, meaning their highest degree coefficient must be 1,
++ Polynomials must be in Z[x], meaning their coefficients must be integers,
++ Polynomials must be irreducible, meaning they cannot be factored in Q,
++ Polynomials must be separable, meaning they must not have multiple roots.
+
+Examples: x^5-3\*x-1 is OK, x^3-3\*x+1 is OK, but x^2+y^2-1 is not OK, y^2-x^3-x-1 is not OK,x^5+a\*x^4+b\*x^3+d is not OK.
+
 **SolveSolvable2.mac** This file defines a function SolveSolvable(poly) where poly is a polynomial to solve.
-+ SolveSolvable(poly) integrates all the sub programs to perform computations above and print intermediate status, solutions by radicals, and numerical verification.
++ SolveSolvable(poly) integrates all the sub programs to perform computations above and print intermediate status, solutions by radicals, and numerical verification. 
 
 **Gal.mac** This file contains functions for the followings:
 + *GalPolynomialInfo* structure to be used during the computation of Galois group
