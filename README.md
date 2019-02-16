@@ -60,7 +60,7 @@ Examples:
 **Gal.mac** This file contains functions for the followings:
 + *GalPolynomialInfo* structure to be used during the computation of Galois group
 + *gal_init_polynomial_info(p)* p:polynomial to be solved. to create and initialize the GalPolynomialInfo and return it
-+ *gal_phi()* computes V by the linear combination of symbolic variables that represent solutions of polynomial p
++ *gal_phi()* computes V by the linear combination of symbolic variables that represent solutions of polynomial p. You may need to change coefficients of the linear combination when the calcuration not correctly performed in gal_minimal_polynomial_V2() and gal_sol_V4() in the source code in SolveSolvable2.mac.
 + *gal_minimal_polynomial_V2()* fast version of computing minimal polynomial of V
 + *gal_sol_V4()* fast version of computing representations of solutions of poly by V
 
@@ -68,7 +68,7 @@ Examples:
 + *FiniteGroup* structure to be used for group related computation
 + *gr_gen_tables()* generates group multiplication table from Galois group represented as permutation. Also, inversion table is generated.
 + *gr_mult()* and *gr_inv()* computes multiplication and inverse in the group.
-+ *gr_normal_subgroup_max* computes a maximum size normal subgroup of a given finite group. 
++ *gr_normal_subgroup_max* computes a maximum size normal subgroup of a given finite group. It is known that there is a slight condition that the algorithm in this function may fail to produce the maximamu size normal subgroup.
 + *gr_subnormal_series()* computes comosition series of a given finite group. 
 
 **ExtendedField.mac** This file contains functions for the followings:
@@ -157,6 +157,6 @@ I would like to thank two japanese persons who commented extensively to the arti
 
 The following two persons published very detailed algorithms in this topic.
 + "Amature mathematician after retirement", who developed a detailed algorithm in Mathematica and sent its description to Ikumi Keita for publish on Ikumi's blog. The text is available [here](https://ikumi.que.jp/blog/wp-content/uploads/2018/09/galois-solution.pdf)
-+ Anonymous, who put a long text about algorithms around this topic in 2014. Part of Gal.mac is based on [this text](http://scipio.secret.jp/Galois/galois_zenbun.pdf).
++ Akio Mimori, who put a long text about algorithms around this topic in 2013. Part of Gal.mac is based on [this text](http://scipio.secret.jp/Galois/galois_zenbun.pdf).
 
 Unfortunately, all of the above are in Japanese. I have not yet found a good literature on the Internet regarding how to solve solvable polynomials of any order, written in English. If you find one, I would welcome to be shared.
