@@ -48,7 +48,11 @@ This package includes the following files: README.md (this file), SolveSolvable2
 + Polynomials must be irreducible, meaning they cannot be factored in Q,
 + Polynomials must be separable, meaning they must not have multiple roots.
 
-Examples: x^5-3\*x-1 is OK, x^3-3\*x+1 is OK, but x^2+y^2-1 is not OK, y^2-x^3-x-1 is not OK,x^5+a\*x^4+b\*x^3+d is not OK.
+Above conditions are checked only in gal_init_polynomial_info(p).
+
+Examples: 
++ OK: x^5-3\*x-1, x^3-3\*x+1, x^5-3, x^4+1,
++ NG: x^2+y^2-1, x^5+a\*x^4+b\*x^3+d, x^2-1, x^5+1
 
 **SolveSolvable2.mac** This file defines a function SolveSolvable(poly) where poly is a polynomial to solve.
 + SolveSolvable(poly) integrates all the sub programs to perform computations above and print intermediate status, solutions by radicals, and numerical verification. 
