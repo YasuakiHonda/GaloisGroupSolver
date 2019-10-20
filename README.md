@@ -56,7 +56,7 @@ This package includes the following files: README.md (this file), SolveSolvable2
 + *gr_gen_tables()* generates group multiplication table from Galois group represented as permutation. Also, inversion table is generated.
 + *gr_mult()* and *gr_inv()* computes multiplication and inverse in the group.
 + *gr_normal_subgroup_max* computes a maximum size normal subgroup of a given finite group. 
-+ *gr_subnormal_series()* computes comosition series of a given finite group. 
++ *gr_subnormal_series()* computes composition series of a given finite group. 
 
 **ExtendedField.mac** This file contains functions for the followings:
 C is a list of radical definitions in reverse order.
@@ -69,9 +69,9 @@ This list of radical definitions actually can be thought of as a series of radic
 
 **Stage3.mac, Stage4.mac** These files contain a function:
 + *StageInfo* structure to be used for reduction of Galois group and radical extension of coefficient field
-+ *Stage()* accepts two normal subgroups in a composition series in neibor and computes a radical definition and a minimul polynomial of V in the extended field.
++ *Stage()* accepts two normal subgroups in a composition series in neighbor and computes a radical definition and a minimul polynomial of V in the extended field.
 
-Stage3.mac uses an algorith briefly described in the Galois paper and further developed by [1], [2] and [3]. Stage4.mac uses the same computation done using Grobner basis package in Maxima.
+Stage3.mac uses an algorithm briefly described in the Galois paper and further developed by [1], [2] and [3]. Stage4.mac uses the same computation done using Grobner basis package in Maxima.
 
 **Verify.mac** This file is for computing numerical values of radicals and solutions represented as radicals.
 + *NumericRadicalEnv()* computes all possible combinations of numeric values of radicals. If condition is given, check and filter out any inappropritate combinations. Conditions can be computed only with Stage4.mac.
