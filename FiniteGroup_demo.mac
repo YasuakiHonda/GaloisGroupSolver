@@ -1,0 +1,90 @@
+/* -*-Maxima-*- */
+/*
+;; Copyright (C) 2019 Nick Strauss <nicks@nick-strauss.com>
+;; FiniteGroup_demo.mac
+;; This file is part of GaloisGroupSolver package.
+;;
+;; This program is free software; you can redistribute it and/or
+;; modify it under the terms of the GNU General Public License as
+;; published by the Free Software Foundation; either version 2 of
+;; the License, or (at your option) any later version.
+;;
+;; This program is distributed in the hope that it will be
+;; useful, but WITHOUT ANY WARRANTY; without even the implied
+;; warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+;; PURPOSE.  See the GNU General Public License for more details.
+;;
+;; You should have received a copy of the GNU General Public
+;; License along with this program; if not, see
+;; <http://www.gnu.org/licenses/>.
+*/
+/* 
+This file computes the multiplication table for S3 - Symmetric Group on Three Letters in two different ways.
+The generated tables match two different references. This verifies that the group table calculation is valid.
+
+The multiplication table varies with the listify permutation elements.
+To compare one table with another, we need to permute the listify.
+
+In the literature, S3 is usually written in cycle notation.
+It is natural to
+place order 2 elements, the idempotent: 1=() 2=(1,2) 3=(2,3) 4=(1,3)
+place order 3 elements 5=(1,2,3) 6=(1,3,2)
+
+Reference https://groupprops.subwiki.org/wiki/Symmetric_group:S3
+
+This gives multiplication table.
+
+Element	     ()	   (1, 2)   (2, 3)	(1, 3)	(1, 2, 3)	(1, 3, 2)
+()	     ()	   (1, 2)   (2, 3)	(1, 3)	(1, 2, 3)	(1, 3, 2)
+(1, 2)	     (1, 2)    ()   (1, 2, 3)	(1, 3, 2)   (2, 3)	(1, 3)
+(2, 3)	     (2, 3)    (1, 3, 2)   ()	(1, 2, 3)   (1, 3)	(1, 2)
+(1, 3)	     (1, 3)    (1, 2, 3)   (1, 3, 2)   ()   (1, 2)	(2, 3)
+(1, 2, 3)    (1, 2, 3) (1, 3) (1, 2)   (2, 3)  (1, 3, 2)	()
+(1, 3, 2)    (1, 3, 2) (2, 3) (1, 3)   (1, 2)  ()  (1, 2, 3)
+
+1 = ()
+2 = (1,2)
+3 = (2,3)
+4 = (1,3)
+5 = (1, 2, 3)	
+6 = (1, 3, 2)
+
+((1 2 3 4 5 6)
+ (2 1 5 6 3 4)
+ (3 6 1 5 4 2)
+ (4 5 6 1 2 3)
+ (5 4 2 3 6 1)
+ (6 3 4 2 1 5))}
+
+*/
+load("FiniteGroup.mac");
+load(combinatorics);
+A[1]=new(FiniteGroup);
+gr_gen_tables(A[1],permute([1,2,6,3,5,4],listify(permutations([a,b,c]))),makelist(i,i,6));
+
+/*
+Or one can vary this order by permuting element 2 and 3.
+The order 2 elements: 1=() 2=(1,2) 3=(1,3) 4=(2,3) 
+The order 3 elements: 5=(1,2,3) 6=(1,3,2)
+
+Reference http://www.hep.caltech.edu/~fcp/math/groupTheory/basics.pdf
+
+Element    ()      (1 2)    (1 3)    (2 3)   (1 2 3) (1 3 2)
+()         ()      (1 2)    (1 3)    (2 3)   (1 2 3) (1 3 2)
+(1 2)      (1 2)   ()       (1 3 2)  (1 2 3) (2 3)   (1 3)
+(1 3)      (1 3)   (1 2 3)  ()       (1 3 2) (1 2)   (2 3)
+(2 3)      (2 3)   (1 3 2)  (1 2 3)  ()      (1 3)   (1 2)
+(1 2 3)    (1 2 3) (1 3)    (2 3)    (1 2)   (1 3 2) ()
+(1 3 2)    (1 3 2) (2 3)    (1 2)    (1 3)   ()      (1 2 3)
+
+1 2 3 4 5 6
+2 1 6 5 4 3
+3 5 1 6 2 4
+4 6 5 1 3 2
+5 3 4 2 6 1
+6 4 2 3 1 5
+										     
+
+*/
+A[2]=new(FiniteGroup);
+gr_gen_tables(A[2],permute([1,3,2,4,5,6], permute([1,2,6,3,5,4],listify(permutations([a,b,c])))),makelist(i,i,6));
