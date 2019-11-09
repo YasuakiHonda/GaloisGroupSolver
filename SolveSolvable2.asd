@@ -1,4 +1,4 @@
-(defsystem SolveSolvable2
+(defsystem solve-solvable
   :defsystem-depends-on ("maxima-file")
   :name "GaloisGroupSolver-SolveSolvable2"
   :author "Yasuaki Honda"
