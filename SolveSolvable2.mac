@@ -19,27 +19,6 @@
 ;; <http://www.gnu.org/licenses/>.
 */
 
-dirpath:pathname_directory(load_pathname)$
-print(dirpath);
-
-load(concat(dirpath,"Gal.mac"));
-load(concat(dirpath,"FiniteGroup.mac"));
-load(concat(dirpath,"ExtendedField.mac"));
-load(concat(dirpath,"Stage3.mac"));
-load(concat(dirpath,"Verify.mac"));
-
-/*
-compile_file(concat(dirpath,"Gal.mac"));
-compile_file(concat(dirpath,"FiniteGroup.mac"));
-compile_file(concat(dirpath,"ExtendedField.mac"));
-compile_file(concat(dirpath,"Stage4.mac"));
-
-load(concat(dirpath,"Gal.fasl"));
-load(concat(dirpath,"FiniteGroup.fasl"));
-load(concat(dirpath,"ExtendedField.fasl"));
-load(concat(dirpath,"Stage4.fasl"));
-*/
-
 /*
 SolveSolvable(x^2-2)$
 SolveSolvable(x^3-3*x-1)$

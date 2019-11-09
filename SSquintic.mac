@@ -19,25 +19,6 @@
 ;; <http://www.gnu.org/licenses/>.
 */
 
-dirpath:"";
-load(concat(dirpath,"Gal.mac"));
-load(concat(dirpath,"FiniteGroup.mac"));
-load(concat(dirpath,"ExtendedField.mac"));
-load(concat(dirpath,"Stage4.mac"));
-load(concat(dirpath,"Verify.mac"));
-
-/*
-compile_file(concat(dirpath,"Gal.mac"));
-compile_file(concat(dirpath,"FiniteGroup.mac"));
-compile_file(concat(dirpath,"ExtendedField.mac"));
-compile_file(concat(dirpath,"Stage3.mac"));
-
-load(concat(dirpath,"Gal.fasl"));
-load(concat(dirpath,"FiniteGroup.fasl"));
-load(concat(dirpath,"ExtendedField.fasl"));
-load(concat(dirpath,"Stage3.fasl"));
-*/
-
 /*
 p1:x^3-2;
 p1:x^5-2;
