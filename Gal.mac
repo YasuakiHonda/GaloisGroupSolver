@@ -36,11 +36,20 @@ dbg_gal_print_progress(msg):=block([display2d:false],
 
 /*phi(xlist):=xlist[1]-3*xlist[2]+10*xlist[3]-7*xlist[4];*/
 
+gal_x_poly(poly):=block([L:listofvars(poly)],length(L)=1 and member('x,L));
+gal_is_linear(poly):=is(hipow(poly,x)=1 or hipow(poly,x)=0);
+gal_is_monic(poly):=is(coeff(poly,x,hipow(poly,x))=1);
+gal_in_Zx(poly):=apply("and",makelist(integerp(coeff(poly,x,i-1)),i,1,hipow(poly,x)));
 gal_irreducible_p(p):=is(expand(p)=factor(p));
 separable_p(p,var):=is(gcd(p,diff(p,var))=1);
+
 defstruct(GalPolynomialInfo(polynomial=0,degree=0,symcond=[],sollist=[],solperm=[],vcond=[],vncond=[],solcond=[],gal_minpoly=0,galois_group_index=false,prec=1000,numsollist=[]));
 
 gal_init_polynomial_info2(p,pi):=block([ele,numsollist,fpprec:pi@prec],
+  if not(gal_x_poly(p)) then error("variable is not 'x':", p),
+  if gal_is_linear(p) then error("already solved:",p),
+  if not(gal_is_monic(p)) then error("not monic:",p),
+  if not(gal_in_Zx(p)) then error("some coeffs not in Z:",p),
   if not(gal_irreducible_p(p)) then error("not irreducible:",p),
   if not(separable_p(p,x)) then error("not separable:",p),
   numsollist:bfallroots(%i*p),
@@ -55,6 +64,10 @@ gal_init_polynomial_info2(p,pi):=block([ele,numsollist,fpprec:pi@prec],
   return(pi));
 
 gal_init_polynomial_info(p):=block([poly,ele,numsollist,fpprec:1000],
+  if not(gal_x_poly(p)) then error("all variables must be 'x':", p),
+  if gal_is_linear(p) then error("already solved:",p),
+  if not(gal_is_monic(p)) then error("not monic:",p),
+  if not(gal_in_Zx(p)) then error("some coeffs not in Z:",p),
   if not(gal_irreducible_p(p)) then error("not irreducible:",p),
   if not(separable_p(p,x)) then error("not separable:",p),
   poly:new(GalPolynomialInfo),

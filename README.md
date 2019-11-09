@@ -41,13 +41,27 @@ The program is solely written in the Maxima language, so I believe the package r
 ## Files and functions in this package
 This package includes the following files: README.md (this file), SolveSolvable2.mac, Gal.mac, FiniteGroup.mac, ExtendedField.mac, Stage3.mac, Stage4.mac, Verify.mac, License.txt
 
+**Important restrictions:** Polynomials dealt in this package are restricted to meet all of the following conditions:
++ Polynomials must be univariate, with variable name 'x',
++ Polynomials must be monic, meaning their highest degree coefficient must be 1,
++ Polynomials must be of degree higher than 1,
++ Polynomials must be in Z[x], meaning their coefficients must be integers,
++ Polynomials must be irreducible, meaning they cannot be factored in Q,
++ Polynomials must be separable, meaning they must not have multiple roots.
+
+Above conditions are checked only in gal_init_polynomial_info(p).
+
+Examples: 
++ OK: x^5-3\*x-1, x^3-3\*x+1, x^5-3, x^4+1,
++ NG: x^2+y^2-1, x^5+a\*x^4+b\*x^3+d, x^2-1, x^5+1, x+1
+
 **SolveSolvable2.mac** This file defines a function SolveSolvable(poly) where poly is a polynomial to solve.
-+ SolveSolvable(poly) integrates all the sub programs to perform computations above and print intermediate status, solutions by radicals, and numerical verification.
++ SolveSolvable(poly) integrates all the sub programs to perform computations above and print intermediate status, solutions by radicals, and numerical verification. 
 
 **Gal.mac** This file contains functions for the followings:
 + *GalPolynomialInfo* structure to be used during the computation of Galois group
 + *gal_init_polynomial_info(p)* p:polynomial to be solved. to create and initialize the GalPolynomialInfo and return it
-+ *gal_phi()* computes V by the linear combination of symbolic variables that represent solutions of polynomial p
++ *gal_phi()* computes V by the linear combination of symbolic variables that represent solutions of polynomial p. You may need to change coefficients of the linear combination when the calcuration not correctly performed in gal_minimal_polynomial_V2() and gal_sol_V4() in the source code in SolveSolvable2.mac.
 + *gal_minimal_polynomial_V2()* fast version of computing minimal polynomial of V
 + *gal_sol_V4()* fast version of computing representations of solutions of poly by V
 
@@ -55,8 +69,8 @@ This package includes the following files: README.md (this file), SolveSolvable2
 + *FiniteGroup* structure to be used for group related computation
 + *gr_gen_tables()* generates group multiplication table from Galois group represented as permutation. Also, inversion table is generated.
 + *gr_mult()* and *gr_inv()* computes multiplication and inverse in the group.
-+ *gr_normal_subgroup_max* computes a maximum size normal subgroup of a given finite group. 
-+ *gr_subnormal_series()* computes composition series of a given finite group. 
++ *gr_normal_subgroup_max* computes a maximum size normal subgroup of a given finite group. It is known that there is a slight condition that the algorithm in this function may fail to produce the maximamu size normal subgroup.
++ *gr_subnormal_series()* computes comosition series of a given finite group. 
 
 **ExtendedField.mac** This file contains functions for the followings:
 C is a list of radical definitions in reverse order.
@@ -144,6 +158,6 @@ I would like to thank two japanese persons who commented extensively to the arti
 
 The following two persons published very detailed algorithms in this topic.
 + "Amature mathematician after retirement", who developed a detailed algorithm in Mathematica and sent its description to Ikumi Keita for publish on Ikumi's blog. The text is available [here](https://ikumi.que.jp/blog/wp-content/uploads/2018/09/galois-solution.pdf)
-+ Anonymous, who put a long text about algorithms around this topic in 2014. Part of Gal.mac is based on [this text](http://scipio.secret.jp/Galois/galois_zenbun.pdf).
++ Akio Mimori, who put a long text about algorithms around this topic in 2013. Part of Gal.mac is based on [this text](http://scipio.secret.jp/Galois/galois_zenbun.pdf).
 
 Unfortunately, all of the above are in Japanese. I have not yet found a good literature on the Internet regarding how to solve solvable polynomials of any order, written in English. If you find one, I would welcome to be shared.
