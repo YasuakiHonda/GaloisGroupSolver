@@ -1,4 +1,4 @@
-(defsystem SSquintic
+(defsystem step-solve
   :defsystem-depends-on ("maxima-file")
   :name "GaloisGroupSolver-SSquintic"
   :author "Yasuaki Honda"
