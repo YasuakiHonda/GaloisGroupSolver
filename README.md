@@ -29,6 +29,26 @@ Along with computing the Galois group, we also compute a minimal polynomial of V
 
 Finally, we compute solutions of the original polynomial from V based on the formulae obtained in the computing of Galois group.
 
+## How to use this package
+### if maxima-asdf is set up for your maxima
+You can use maxima-asdf to download the package from github, install it in the appropriate directory, and load it into maxima by using the following commands:
+
+    (%i1) install_github("YasuakiHonda","GaloisGroupSolver","master")$
+
+    (%i2) asdf_load_source("solve-solvable");
+
+    (%i3) SolveSolvable(x^3+2)$
+
+
+### if maxima-asdf not used
+
+You can download this package from Github as an zip archive. After you unzip the archive, you change in to the expanded directory.
+
+Then, invoke maxima and type the following commands:
+
+    (%i1) map(load, ["Gal.mac","FiniteGroup.mac","ExtendedField.mac","Stage3.mac","Verify.mac",SolveSolvable2.mac"])$
+
+    (%i2) SolveSolvable(x^3+2)$
 
 ## Development and test environments
 ### Development environment 
