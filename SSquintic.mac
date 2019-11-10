@@ -33,7 +33,7 @@ p1:x^4-2*x^3+2*x^2+2;
 debug_gal:false;
 progress_flag:true;
 gal_phi(xlist):=ev(sum(xlist[i]*cl[i],i,1,length(xlist)),cl:[1,-1,2,-5,0,0]);
-p1:x^5-3;
+p1:x^3-3;
 PS:gal_init_polynomial_info(p1)$
 gal_minimal_polynomial_V2(PS);
 gal_sol_V4(PS)$
@@ -52,10 +52,6 @@ SI2[i]:Stage(NSGS[i],NSGS[i+1],subst(V,x,SI2[i-1]@gv),PS@vncond,SI2[i-1]@Extensi
 SI2[i]@gv,i:1;
 SI2[i]:Stage(NSGS[i],NSGS[i+1],subst(V,x,SI2[i-1]@gv),PS@vncond,SI2[i-1]@ExtensionList,SI2[i-1]@AC),i:2$
 SI2[i]@gv,i:2;
-SI2[i]:Stage(NSGS[i],NSGS[i+1],subst(V,x,SI2[i-1]@gv),PS@vncond,SI2[i-1]@ExtensionList,SI2[i-1]@AC),i:3$
-SI2[i]@gv,i:3;
-SI2[i]:Stage(NSGS[i],NSGS[i+1],subst(V,x,SI2[i-1]@gv),PS@vncond,SI2[i-1]@ExtensionList,SI2[i-1]@AC),i:4$
-SI2[i]@gv,i:4;
 
 /* Compute solutions */
 SolN:length(PS@sollist);
